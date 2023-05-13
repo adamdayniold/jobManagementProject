@@ -1,48 +1,35 @@
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { Alert, Image, useWindowDimensions, View, Text, StatusBar, ToastAndroid, Keyboard, StyleSheet, ScrollView } from 'react-native';
+import { Alert, View, Text, StyleSheet, ScrollView } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Linking from 'expo-linking';
+import ProgressLoader from 'rn-progress-loader';
 
-import { collection, getDocs, doc, addDoc, writeBatch, where, query } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
-import { auth, db } from '../../../../../firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import { auth, db } from '../../../../firebase';
 
+import CustomProjectListLoader from '../../../components/customProjectListLoader';
+import CustomProjectSpeedDial from '../../../components/customProjectSpeedDial';
+import CustomZoneView from '../../../components/view/customZoneView';
 import styles from './styles';
-import CustomProjectSpeedDial from '../../../../components/customProjectSpeedDial';
-import CustomProjectListLoader from '../../../../components/customProjectListLoader';
-import CustomZoneView from '../../../../components/view/customZoneView';
 
-export default function ConstructorZoneDashboardScreen(props) {
+export default function ZonesListScreen(props) {
 
-  const [userEmail, setUserEmail] = useState('');
-  const [selectedItem, setSelectedItem] = useState(null);
   const [userItem, setUserItem] = useState([]);
-  const [zoneItem, setZoneItem] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [allItemData, setAllItemData] = useState([]);
-  const [userInformation, setUserInformation] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const btmSelectionRef = useRef(null);
 
   useFocusEffect(useCallback(() => {
-    async function fetchZoneData() {
-      setIsLoading(true)
-      const user = auth.currentUser;
-      if (user) {
-        const sortedZone = await getZone();
-        const sortedUser = await getUsers();
-        const userSet = await setUser(sortedZone, sortedUser);
-        const zoneItemDetails = JSON.stringify(userSet);
-        setUserInformation(user);
-        setAllItemData(JSON.parse(zoneItemDetails));
-      }
-      setIsLoading(false);
+    async function fetchUserInformation() {
+      setIsLoading(true);
+      await getZone();
     }
-    fetchZoneData();
+    const userDetails = auth.currentUser;
+    if (userDetails) {
+      fetchUserInformation();
+    }
   }, []))
-
-  const handleOpenFormSheet = (data) => {
-    btmSelectionRef.current.open(0);
-  }
 
   const setUser = (zoneDetails, userDetails) => {
     return new Promise((resolve, reject) => {
@@ -86,14 +73,12 @@ export default function ConstructorZoneDashboardScreen(props) {
         const usersList = await getDocs(usersRef);
         if (usersList) {
           usersList.forEach((doc) => {
-            if (doc.data().type !== 'admin') {
-              list.push({
-                id: doc.id,
-                ...doc.data()
-              });
-            }
+            list.push({
+              id: doc.id,
+              ...doc.data()
+            });
           });
-          const sortedUser = list.sort((a, b) => a.name.localeCompare(b.name));
+          const sortedUser = list.sort((a, b) => a.name.localeCompare(b.type));
           setUserItem(sortedUser);
           resolve(sortedUser);
         }
@@ -109,22 +94,28 @@ export default function ConstructorZoneDashboardScreen(props) {
     return new Promise(async (resolve, reject) => {
       try {
         const list = [];
-        const listZones = await getDocs(collection(db, 'Zones'));
+        const listZones = await getDocs(collection(db, 'Events'));
         if (listZones) {
           listZones.forEach((doc) => {
-            list.push({
-              id: doc.id,
-              ...doc.data()
-            });
+            if (doc.data().deleted === false) {
+              list.push({
+                id: doc.id,
+                ...doc.data()
+              });
+            }
           });
-          const sortedZone = list.sort((a, b) => a.name.localeCompare(b.name))
-          setZoneItem(sortedZone);
-          resolve(sortedZone);
+          const sortedZone = list.sort((a, b) => a.dateTime.localeCompare(b.dateTime))
+          setAllItemData(sortedZone || []);
+        } else {
+          setAllItemData([]);
         }
-      } catch (err) {
-        setIsLoading(false);
         resolve(true);
-        alertPopup('Error', 'Error fetching project list');
+        setIsLoading(false);
+      } catch (err) {
+        resolve(true);
+        console.log('Error fetching events list', err);
+        setIsLoading(false);
+        alertPopup('Error', 'Error fetching events list');
       }
     })
   }
@@ -133,8 +124,9 @@ export default function ConstructorZoneDashboardScreen(props) {
     return (
       <CustomZoneView
         data={allItemData}
-        currentUserInformation={userInformation}
         onLongPress={(index) => goTo('ZoneCreation', index)}
+        onDownload={(url, docName) => downloadFile(url, docName)}
+        isEvent
       />
     )
   }
@@ -150,11 +142,19 @@ export default function ConstructorZoneDashboardScreen(props) {
   const goTo = (navi, index) => {
     if (navi === 'ZoneCreation') {
       props.navigation.navigate(navi, {
-        isAdmin: false,
         isNew: false,
         data: allItemData[index]
       })
     } else { props.navigation.navigate(navi) }
+  }
+
+  const downloadFile = async (url, docName) => {
+    setIsDownloading(true);
+    await FileSystem.downloadAsync(
+      url, FileSystem.documentDirectory + docName
+    );
+    Linking.openURL(url);
+    setIsDownloading(false);
   }
 
   const alertPopup = (title, message) => Alert.alert(title, message, [{
@@ -162,13 +162,25 @@ export default function ConstructorZoneDashboardScreen(props) {
   }]);
   if (isLoading) {
     return <CustomProjectListLoader />
+  } else if (isDownloading) {
+    return (
+      <View>
+        <ProgressLoader
+          visible={true}
+          isModal={true}
+          isHUD={true}
+          hudColor="#525253"
+          color="#FAF9F6"
+        ></ProgressLoader>
+      </View>
+    )
   } else {
     return (
       <>
         <ScrollView>
-          {zoneItem && zoneItem.length > 0 ? <ZoneListComponent /> : <EmptyList type="zone" />}
+          {allItemData && allItemData.length > 0 ? <ZoneListComponent /> : <EmptyList type="events" />}
         </ScrollView>
-        <CustomProjectSpeedDial outsideProps={props} isRegistered isDashboard />
+        <CustomProjectSpeedDial outsideProps={props} isEvent />
       </>
     )
   }

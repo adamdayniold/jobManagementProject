@@ -1,7 +1,6 @@
 import React from 'react';
-import { useEffect, useState, useCallback } from 'react';
-import { Alert, Text, StatusBar, SafeAreaView } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { useState } from 'react';
+import { Alert, Text, StatusBar, SafeAreaView, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -24,24 +23,20 @@ export default function LoginScreen(props) {
     setIsButtonDisabled(true);
     signInWithEmailAndPassword(auth, email, password)
       .then(async (data) => {
-        await checkUserType(data.user.uid);
+        await loginUser(data.user.uid);
       })
       .catch(() => alertPopup('Error', 'Invalid credentials'))
-      // .catch(() => ToastAndroid.show('Invalid credentials', ToastAndroid.SHORT))
       .finally(() => setIsButtonDisabled(false))
   }
 
-  const checkUserType = async (userUID) => {
+  const loginUser = async (userUID) => {
     try {
-      setEmail('');
-      setPassword('');
       const docRef = doc(db, 'Users', userUID);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        const { type } = docSnap.data();
-        if (type === 'admin') goTo('AdminDashboard');
-        else if (type === 'constructor') goTo('ConstructorDashboard');
-        else if (type === 'employee') goTo('EmployeeDashboard');
+        setEmail('');
+        setPassword('');
+        goTo('UserDashboard');
       } else {
         alertPopup('Error', 'Account does not exists');
       }
@@ -64,12 +59,9 @@ export default function LoginScreen(props) {
       <StatusBar translucent barStyle="light-content" />
       <SafeAreaProvider>
         <SafeAreaView style={styles.safeAreaContainer}>
-          <KeyboardAwareScrollView
-            style={{ backgroundColor: '#f7f7f7' }}
-            contentContainerStyle={styles.container}
-            scrollEnabled={false}
-            resetScrollToCoords={{ x: 0, y: 0 }}
-            keyboardShouldPersistTaps="handled"
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.container}
           >
             <Text style={styles.login}>Login</Text>
 
@@ -103,7 +95,7 @@ export default function LoginScreen(props) {
               btnColor="#570861"
               txtColor="white"
             />
-          </KeyboardAwareScrollView>
+          </KeyboardAvoidingView>
         </SafeAreaView>
       </SafeAreaProvider>
     </>

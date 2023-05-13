@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'space-evenly'
   },
   insideButtonPIC: {
     textAlign: 'center'
@@ -38,9 +38,8 @@ const styles = StyleSheet.create({
     color: '#570861'
   },
   detailsText: {
-    marginVertical: 5,
     marginHorizontal: 10,
-    fontSize: 20,
+    fontSize: 15,
   }
 })
 

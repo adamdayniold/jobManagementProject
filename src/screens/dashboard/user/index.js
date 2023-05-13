@@ -10,10 +10,11 @@ import CustomProjectListLoader from '../../../components/customProjectListLoader
 import CustomProjectSpeedDial from '../../../components/customProjectSpeedDial';
 import styles from './styles';
 
-export default function AdminDashboardScreen(props) {
+export default function UserDashboardScreen(props) {
 
   const [userItem, setUserItem] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [initial, setInitial] = useState('');
 
   useFocusEffect(useCallback(() => {
     const fetchUserInformation = async () => {
@@ -40,6 +41,8 @@ export default function AdminDashboardScreen(props) {
             });
           });
           const userData = list.find(details => details.id === user.uid);
+          const userInitial = userData.name.slice(0, 1);
+          setInitial(userInitial.toUpperCase());
           setUserItem(userData);
           resolve(userData)
           setIsLoading(false);
@@ -50,8 +53,8 @@ export default function AdminDashboardScreen(props) {
     })
   }
 
-  const goTo = (route, param) => {
-    props.navigation.navigate(route, param);
+  const goTo = (route) => {
+    props.navigation.navigate(route);
   }
 
   const alertPopup = (title, message) => Alert.alert(title, message, [{
@@ -64,26 +67,41 @@ export default function AdminDashboardScreen(props) {
       <>
         <ScrollView style={styles.container}>
           <Text style={styles.welcomeText}>Welcome</Text>
-          <Text style={styles.detailsText}>Name: {userItem.name}</Text>
-          <Text style={styles.detailsText}>Email: {userItem.email}</Text>
+          <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center' }}>
+            <View style={{ width: 55, height: 55 }}>
+              <View style={{ justifyContent: 'center', backgroundColor: 'grey', height: '100%', borderRadius: 50 }}>
+                <Text style={{ textAlign: 'center', fontSize: 20 }}>{initial}</Text>
+              </View>
+            </View>
+          </View>
+          <Text style={{ marginVertical: 0, marginHorizontal: 10, fontSize: 22, fontWeight: 600, textAlign: 'center' }}>{userItem.name}</Text>
+          <Text style={{ marginVertical: 0, marginHorizontal: 10, fontSize: 19, textAlign: 'center' }}>{userItem.email}</Text>
+          <View style={{ marginTop: 20, marginHorizontal: 15, paddingVertical: 15, borderTopWidth: 1, borderTopColor: '#D3D3D3', borderBottomWidth: 1, borderBottomColor: '#D3D3D3' }}>
+            <Text style={styles.detailsText}>Company: {userItem.company}</Text>
+          </View>
+          <View style={{ marginBottom: 20, marginHorizontal: 15, paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#D3D3D3' }}>
+            <Text style={styles.detailsText}>Designation: {userItem.designation}</Text>
+          </View>
           <View style={styles.buttonPIC}>
             <View>
               <CustomRoundedButton
-                onPress={() => goTo('ZonesList', { user: 'admin' })}
+                onPress={() => goTo('ZonesList')}
                 disable={isLoading}
                 icon="event"
                 type="material"
                 color="#570861"
+                large
               />
               <Text style={styles.insideButtonPIC}>Events</Text>
             </View>
             <View>
               <CustomRoundedButton
-                onPress={() => goTo('UsersList', { user: 'admin' })}
+                onPress={() => goTo('PICList')}
                 disable={isLoading}
                 icon="toc"
                 type="material"
                 color="#570861"
+                large
               />
               <Text style={styles.insideButtonPIC}>PIC</Text>
             </View>

@@ -4,18 +4,25 @@ const styles = StyleSheet.create({
   container: {
   },
   styling: {
-    borderColor: 'grey',
+    borderColor: '#D3D3D3',
     borderWidth: 1,
-    marginVertical: 20,
+    marginTop: 10,
+    marginHorizontal: 20,
+    borderRadius: 10,
+    padding: 10,
+    backgroundColor: 'white'
+  },
+  stylingLast: {
+    borderColor: '#D3D3D3',
+    borderWidth: 1,
+    marginVertical: 10,
     marginHorizontal: 20,
     borderRadius: 10,
     padding: 10,
     backgroundColor: 'white'
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingBottom: 1,
+    flexDirection: 'column',
     marginBottom: 5
   },
   headerSection: {

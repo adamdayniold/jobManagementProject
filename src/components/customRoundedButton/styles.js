@@ -7,7 +7,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 100,
     bottom: 0
-  },
+  }
 });
 
 export default styles;

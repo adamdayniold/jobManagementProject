@@ -1,99 +1,31 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { Alert, Image, useWindowDimensions, View, Text, StatusBar, ToastAndroid, Keyboard, StyleSheet } from 'react-native';
+import { Alert, View, Text, ScrollView } from 'react-native';
 
 import { auth, db } from '../../../../firebase';
-import { collection, getDocs, getDoc, doc, addDoc, writeBatch, where, query } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
+import { collection, getDocs } from 'firebase/firestore';
 
-import CustomProjectSpeedDial from '../../../components/customProjectSpeedDial';
+import CustomRoundedButton from '../../../components/customRoundedButton';
 import CustomProjectListLoader from '../../../components/customProjectListLoader';
-import { ScrollView } from 'react-native-gesture-handler';
-import CustomZoneView from '../../../components/view/customZoneView';
+import CustomProjectSpeedDial from '../../../components/customProjectSpeedDial';
 import styles from './styles';
 
 export default function EmployeeDashboardScreen(props) {
 
-  const [zoneItem, setZoneItem] = useState([]);
-  const [userInformation, setUserInformation] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [userItem, setUserItem] = useState([]);
-  const [allItemData, setAllItemData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useFocusEffect(useCallback(() => {
     const fetchInformation = async () => {
-      setIsLoading(true);
       const user = auth.currentUser;
       if (user) {
-        const sortedZone = await getZone(user);
-        const sortedUser = await getUser();
-        const userSet = await setUser(sortedZone, sortedUser);
-        const zoneItemDetails = JSON.stringify(userSet);
-        setUserInformation(user);
-        setAllItemData(JSON.parse(zoneItemDetails));
+        await getUsers(user)
       }
-      setIsLoading(false);
     }
     fetchInformation();
   }, []))
 
-  const getZone = async (user) => {
-    return new Promise((async (resolve, reject) => {
-      try {
-        const list = [];
-        const listZones = await getDocs(collection(db, 'Zones'));
-        if (listZones) {
-          listZones.forEach((doc) => {
-            if (doc.data().employeeList.length > 0 && doc.data().employeeList.includes(user.uid)) {
-              list.push({
-                id: doc.id,
-                ...doc.data()
-              });
-            }
-          });
-          const sortedZone = list.sort((a, b) => a.name.localeCompare(b.name));
-          setZoneItem(sortedZone);
-          resolve(sortedZone);
-        }
-      } catch (err) {
-        setIsLoading(false);
-        resolve(true);
-        alertPopup('Error', 'Error fetching project list');
-      }
-    }))
-  }
-
-  const setUser = (zoneDetails, userDetails) => {
-    return new Promise((resolve, reject) => {
-      if (zoneDetails && zoneDetails.length > 0) {
-        let employeeListing = [];
-        let constructorListing = [];
-        zoneDetails.forEach((zone) => {
-          employeeListing = [];
-          constructorListing = [];
-          if (zone.employeeList.length > 0) {
-            zone.employeeList.forEach(empUserData => {
-              userDetails.find(userData => {
-                if (empUserData === userData.id) employeeListing.push(empUserData);
-              })
-            })
-          }
-          if (zone.constructorList.length > 0) {
-            zone.constructorList.forEach(consData => {
-              userDetails.find(consUserData => {
-                if (consData === consUserData.id) constructorListing.push(consUserData);
-              })
-            })
-          }
-          zone['employeeDetails'] = [...employeeListing];
-          zone['constructorDetails'] = [...constructorListing];
-        })
-      }
-      resolve(zoneDetails);
-    })
-  }
-
-  const getUser = async () => {
+  const getUsers = async (user) => {
     return new Promise(async (resolve, reject) => {
       try {
         setIsLoading(true);
@@ -102,16 +34,15 @@ export default function EmployeeDashboardScreen(props) {
         const usersList = await getDocs(usersRef);
         if (usersList) {
           usersList.forEach(doc => {
-            if (doc.data().type != 'admin') {
-              list.push({
-                id: doc.id,
-                ...doc.data()
-              })
-            }
+            list.push({
+              id: doc.id,
+              ...doc.data()
+            })
           })
-          const sortedUser = list.sort((a, b) => a.name.localeCompare(b.name));
-          setUserItem(sortedUser);
-          resolve(sortedUser);
+          const userData = list.find(details => details.id === user.uid);
+          setUserItem(userData);
+          resolve(userData);
+          setIsLoading(false);
         }
       } catch (err) {
         setIsLoading(false);
@@ -121,25 +52,10 @@ export default function EmployeeDashboardScreen(props) {
     })
   }
 
-  const ZoneListComponent = () => {
-    return (
-      <CustomZoneView
-        data={allItemData}
-        currentUserInformation={userInformation}
-      />
-    )
+  const goTo = (route, param) => {
+    props.navigation.navigate(route, param);
   }
 
-  const EmptyList = ({ type }) => {
-    return (
-      <View style={styles.emptyListView}>
-        <Text style={styles.emptyList}>No zone is assigned to you</Text>
-      </View>
-    )
-  }
-
-  const goTo = () => {
-  }
 
   const alertPopup = (title, message) => Alert.alert(title, message, [{
     text: 'OK', onPress: () => console.log('OK Pressed')
@@ -149,10 +65,35 @@ export default function EmployeeDashboardScreen(props) {
   } else {
     return (
       <>
-        <ScrollView>
-          {userItem && zoneItem && zoneItem.length > 0 && userItem.length > 0 ? <ZoneListComponent /> : <EmptyList />}
+        <ScrollView style={styles.container}>
+          {/* {userItem && userItem.length > 0 ? <UserListComponent /> : <EmptyList type="user" />} */}
+          <Text style={styles.welcomeText}>Welcome</Text>
+          <Text style={styles.detailsText}>Name: {userItem.name}</Text>
+          <Text style={styles.detailsText}>Email: {userItem.email}</Text>
+          <View style={styles.buttonPIC}>
+            <View>
+              <CustomRoundedButton
+                onPress={() => goTo('ZonesList', { user: 'employee' })}
+                disable={isLoading}
+                icon="event"
+                type="material"
+                color="#570861"
+              />
+              <Text style={styles.insideButtonPIC}>Events</Text>
+            </View>
+            <View>
+              <CustomRoundedButton
+                onPress={() => goTo('UsersList', { user: 'employee' })}
+                disable={isLoading}
+                icon="toc"
+                type="material"
+                color="#570861"
+              />
+              <Text style={styles.insideButtonPIC}>PIC</Text>
+            </View>
+          </View>
         </ScrollView>
-        <CustomProjectSpeedDial outsideProps={props} addNewForm={() => handleOpenFormSheet()} isRegistered isDashboard />
+        <CustomProjectSpeedDial outsideProps={props} isDashboard />
       </>
     )
   }

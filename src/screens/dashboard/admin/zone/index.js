@@ -130,6 +130,7 @@ export default function AdminZoneDashboardScreen(props) {
     return (
       <CustomZoneView
         data={allItemData}
+        onLongPress={(index) => goTo('ZoneCreation', index)}
       />
     )
   }
@@ -142,7 +143,14 @@ export default function AdminZoneDashboardScreen(props) {
     )
   }
 
-  const goTo = () => {
+  const goTo = (navi, index) => {
+    if (navi === 'ZoneCreation') {
+      props.navigation.navigate(navi, {
+        isAdmin: true,
+        isNew: false,
+        data: allItemData[index]
+      })
+    } else { props.navigation.navigate(navi) }
   }
 
   const alertPopup = (title, message) => Alert.alert(title, message, [{

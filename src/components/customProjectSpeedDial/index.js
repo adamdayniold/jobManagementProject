@@ -5,7 +5,7 @@ import { SpeedDial } from '@rneui/themed';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../../firebase';
 
-const CustomProjectSpeedDial = ({ outsideProps, isRegistered, isAdmin, isDashboard }) => {
+const CustomProjectSpeedDial = ({ outsideProps, isRegistered, isAdmin, isDashboard, isEvent, isPIC }) => {
 
   const [open, setOpen] = useState(false);
 
@@ -25,9 +25,15 @@ const CustomProjectSpeedDial = ({ outsideProps, isRegistered, isAdmin, isDashboa
     let param;
     if (Route == 'Dashboard') {
       navigateRoute = isAdmin ? 'AdminDashboard' : 'ConstructorDashboard'
-    } else if (Route === 'UserCreation' || Route === 'ZoneCreation') {
+    } else if (Route === 'UserCreation') {
       navigateRoute = Route;
       param = { type: isAdmin ? 'Admin' : 'Constructor' }
+    } else if (Route === 'ZoneCreation') {
+      navigateRoute = Route;
+      param = { isAdmin: true, isNew: true };
+    } else if (Route === 'PICCreation') {
+      navigateRoute = Route;
+      param = { isAdmin: true, isNew: true };
     }
     outsideProps.navigation.navigate(navigateRoute, param);
   }
@@ -39,17 +45,21 @@ const CustomProjectSpeedDial = ({ outsideProps, isRegistered, isAdmin, isDashboa
   const User = () => {
     return (
       <>
-        {isAdmin &&
+        {isPIC &&
           <>
             <SpeedDial.Action
               icon={{ name: 'person', color: '#fff' }}
-              title="Add New Account"
-              onPress={() => navigate('UserCreation')}
+              title="Add New PIC"
+              onPress={() => navigate('PICCreation')}
               buttonStyle={{ backgroundColor: '#000080' }}
             />
+          </>
+        }
+        {isEvent &&
+          <>
             <SpeedDial.Action
               icon={{ name: 'map', color: '#fff' }}
-              title="Add New Construction Zone"
+              title="Add New Event"
               onPress={() => navigate('ZoneCreation')}
               buttonStyle={{ backgroundColor: '#000080' }}
             />

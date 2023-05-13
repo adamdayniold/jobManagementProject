@@ -8,6 +8,7 @@ import { auth, db } from '../../../../../firebase';
 import CustomProjectSpeedDial from '../../../../components/customProjectSpeedDial';
 import CustomSwipableListView from '../../../../components/view/customSwipableListView';
 import CustomProjectListLoader from '../../../../components/customProjectListLoader';
+import CustomRoundedButton from '../../../../components/customRoundedButton';
 import styles from './styles';
 
 export default function AdminUserDashboardScreen(props) {
@@ -36,7 +37,7 @@ export default function AdminUserDashboardScreen(props) {
     }
   }
 
-  const getUsers = async () => {
+  const getUsers = async (user) => {
     try {
       setIsLoading(true);
       const list = [];
@@ -44,7 +45,7 @@ export default function AdminUserDashboardScreen(props) {
       const usersList = await getDocs(usersRef);
       if (usersList) {
         usersList.forEach((doc) => {
-          if (doc.data().type !== 'admin') {
+          if (doc.data().includes(user.uid)) {
             list.push({
               id: doc.id,
               ...doc.data()
@@ -52,6 +53,7 @@ export default function AdminUserDashboardScreen(props) {
           }
         });
         setUserItem(list.sort((a, b) => a.name.localeCompare(b.type)));
+        console.log(list)
       }
       setIsLoading(false);
     } catch (err) {
@@ -83,6 +85,14 @@ export default function AdminUserDashboardScreen(props) {
   const goTo = () => {
   }
 
+  const handleEvents = () => {
+    console.log('handleevents')
+  }
+
+  const handlePIC = () => {
+    console.log('handle PIC')
+  }
+
   const alertPopup = (title, message) => Alert.alert(title, message, [{
     text: 'OK', onPress: () => console.log('OK Pressed')
   }]);
@@ -92,9 +102,31 @@ export default function AdminUserDashboardScreen(props) {
     return (
       <>
         <ScrollView>
-          {userItem && userItem.length > 0 ? <UserListComponent /> : <EmptyList type="user" />}
+          {/* {userItem && userItem.length > 0 ? <UserListComponent /> : <EmptyList type="user" />} */}
+          <View style={styles.buttonPIC}>
+            <View>
+              <CustomRoundedButton
+                onPress={() => handleEvents()}
+                disable={isLoading}
+                icon="event"
+                type="material"
+                color="#570861"
+              />
+              <Text style={styles.insideButtonPIC}>Events</Text>
+            </View>
+            <View>
+              <CustomRoundedButton
+                onPress={() => handlePIC()}
+                disable={isLoading}
+                icon="toc"
+                type="material"
+                color="#570861"
+              />
+              <Text style={styles.insideButtonPIC}>PIC</Text>
+            </View>
+          </View>
         </ScrollView>
-        <CustomProjectSpeedDial outsideProps={props} addNewForm={() => handleOpenFormSheet()} isRegistered isAdmin isDashboard />
+        {/* <CustomProjectSpeedDial outsideProps={props} addNewForm={() => handleOpenFormSheet()} isRegistered isAdmin isDashboard /> */}
       </>
     )
   }

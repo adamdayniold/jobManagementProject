@@ -8,7 +8,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f7f7f7',
     paddingLeft: 20,
     paddingRight: 20,
-    marginTop: '-40%'
   },
   login: {
     fontSize: 50,

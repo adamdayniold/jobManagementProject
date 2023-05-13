@@ -1,116 +1,58 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { Alert, Image, useWindowDimensions, View, Text, StatusBar, ToastAndroid, Keyboard, StyleSheet } from 'react-native';
+import { Alert, View, Text, ScrollView } from 'react-native';
 
 import { auth, db } from '../../../../firebase';
-import { collection, getDocs, doc, addDoc, writeBatch, where, query } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
+import { collection, getDocs } from 'firebase/firestore';
 
-import CustomProjectSpeedDial from '../../../components/customProjectSpeedDial';
+import CustomRoundedButton from '../../../components/customRoundedButton';
 import CustomProjectListLoader from '../../../components/customProjectListLoader';
-import { ScrollView } from 'react-native-gesture-handler';
+import CustomProjectSpeedDial from '../../../components/customProjectSpeedDial';
+import styles from './styles';
 
 export default function ConstructorDashboardScreen(props) {
 
-  const [userEmail, setUserEmail] = useState('');
-  const [zoneItem, setZoneItem] = useState([]);
-  const [userItem, setUserItem] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [userItem, setUserItem] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useFocusEffect(useCallback(async () => {
-    const user = auth.currentUser;
-    if (user) {
-      await getUsers();
-      await getZone();
+  useFocusEffect(useCallback(() => {
+    const fetchUserInformation = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        await getUsers(user);
+      }
     }
+    fetchUserInformation();
   }, []))
 
-  const getZone = async () => {
-    try {
-      const list = [];
-      const listZones = await getDocs(collection(db, 'Zone'));
-      if (listZones) {
-        listZones.forEach((doc) => {
-          list.push({
-            id: doc.id,
-            ...doc.data()
-          });
-        });
-        const sortedList = list.sort((a, b) => a.name.localeCompare(b.name));
-        sortedList.forEach((zoneDetails) => {
-          const listWithEmployee = [];
-          userItem.forEach((userDetails) => {
-            if (zoneDetails.employeeList.length > 0 && userDetails.employeeList.includes(userDetails.id)) {
-              listWithEmployee.push(userDetails);
-            }
-          })
-          sortedList.employee = listWithEmployee;
-        })
-        setZoneItem(sortedList);
-        setIsLoading(false);
-      }
-    } catch (err) {
-      setIsLoading(false);
-      alertPopup('Error', 'Error fetching project list');
-    }
-  }
-
-  const getUsers = async () => {
-    try {
-      setIsLoading(true);
-      const list = [];
-      const usersRef = collection(db, "Users");
-      const usersList = await getDocs(usersRef);
-      if (usersList) {
-        usersList.forEach((doc) => {
-          if (doc.data().type === 'Employee') {
+  const getUsers = async (user) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        setIsLoading(true);
+        const list = [];
+        const usersRef = collection(db, "Users");
+        const usersList = await getDocs(usersRef);
+        if (usersList) {
+          usersList.forEach((doc) => {
             list.push({
               id: doc.id,
               ...doc.data()
             });
-          }
-        });
-        setUserItem(list.sort((a, b) => a.name.localeCompare(b.name)));
+          });
+          const userData = list.find(details => details.id === user.uid);
+          setUserItem(userData);
+          resolve(userData);
+          setIsLoading(false);
+        }
+      } catch (err) {
+        setIsLoading(false);
+        alertPopup('Error', 'Error fetching users list');
       }
-    } catch (err) {
-      setIsLoading(false);
-      alertPopup('Error', 'Error fetching users list');
-    }
+    })
   }
 
-  const UserListComponent = () => userItem.map((userList) => {
-    return (
-      <CustomSwipableListView
-        goTo={(name) => goTo(name)}
-        onEdit={(data) => handleOpenFormSheet(data)}
-        isRegistered={true}
-        list={userList}
-        key={userList.id}
-      />
-    )
-  })
-
-  const ZoneListComponent = () => zoneItem.map((zoneList) => {
-    return (
-      <CustomSwipableListView
-        goTo={(name) => goTo(name)}
-        onEdit={(data) => handleOpenFormSheet(data)}
-        isRegistered={true}
-        list={zoneList}
-        key={zoneList.id}
-      />
-    )
-  })
-
-  const EmptyList = ({ type }) => {
-    return (
-      <View style={styles.emptyListView}>
-        <Text style={styles.emptyList}>No {type} data...</Text>
-      </View>
-    )
-  }
-
-  const goTo = () => {
+  const goTo = (route, param) => {
+    props.navigation.navigate(route, param);
   }
 
   const alertPopup = (title, message) => Alert.alert(title, message, [{
@@ -121,18 +63,35 @@ export default function ConstructorDashboardScreen(props) {
   } else {
     return (
       <>
-        <ScrollView>
-          {userItem && userItem.length > 0 ? <UserListComponent /> : <EmptyList type="user" />}
+        <ScrollView style={styles.container}>
+          <Text style={styles.welcomeText}>Welcome</Text>
+          <Text style={styles.detailsText}>Name: {userItem.name}</Text>
+          <Text style={styles.detailsText}>Email: {userItem.email}</Text>
+          <View style={styles.buttonPIC}>
+            <View>
+              <CustomRoundedButton
+                onPress={() => goTo('ZonesList', { user: 'constructor' })}
+                disable={isLoading}
+                icon="event"
+                type="material"
+                color="#570861"
+              />
+              <Text style={styles.insideButtonPIC}>Events</Text>
+            </View>
+            <View>
+              <CustomRoundedButton
+                onPress={() => goTo('UsersList', { user: 'constructor' })}
+                disable={isLoading}
+                icon="toc"
+                type="material"
+                color="#570861"
+              />
+              <Text style={styles.insideButtonPIC}>PIC</Text>
+            </View>
+          </View>
         </ScrollView>
-        <CustomProjectSpeedDial outsideProps={props} addNewForm={() => handleOpenFormSheet()} isRegistered isDashboard />
+        <CustomProjectSpeedDial outsideProps={props} isDashboard />
       </>
     )
   }
 }
-
-const styles = StyleSheet.create({
-  text: {
-    fontSize: 50,
-    color: 'black'
-  },
-});

@@ -9,51 +9,47 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../../../../firebase';
 
-import SelectDropdown from 'react-native-select-dropdown';
 import styles from './styles';
 import CustomButton from '../../../components/customButton';
 import CustomInput from '../../../components/customInput';
 import CustomProjectSpeedDial from '../../../components/customProjectSpeedDial';
-import CustomRadioButton from '../../../components/customRadioButton';
 
 export default function ManageUserScreen(props) {
 
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [company, setCompany] = useState('');
+  const [designation, setDesignation] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [type, setType] = useState('');
-  const [isUserAdmin, setIsUserAdmin] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
-  const typeChoice = [
-    { label: 'Admin', value: 'admin' },
-    { label: 'Constructor', value: 'constructor' },
-    { label: 'Employee', value: 'employee' }
-  ]
 
   const register = async () => {
-    if (email == '' || name == '' || password == '' || confirmPassword == '' || type == '') {
+    if (email == '' || name == '' || password == '' || confirmPassword == '' || company == '' || designation == '') {
       // ToastAndroid.show('Please fill in all the details!', ToastAndroid.SHORT);
       alertPopup('Warning', 'Please fill in all the details!');
     } else if (password !== confirmPassword) {
       alertPopup('Warning', 'Password does not match confirm password!');
       // ToastAndroid.show('Password does not match confirm password!', ToastAndroid.SHORT);
-    } else if (email !== '' && name !== '' && password !== '' && password == confirmPassword && type !== '') {
+    } else if (email !== '' && name !== '' && password !== '' && password == confirmPassword && type !== '' && company !== '' && designation !== '') {
       setIsButtonDisabled(true);
       createUserWithEmailAndPassword(auth, email, password)
         .then(async userCredentials => {
           await setDoc(doc(db, "Users", userCredentials.user?.uid), {
             name,
             email,
-            type
+            company,
+            designation
           });
           alertPopup('Success', 'Registered successful');
           // ToastAndroid.show('Registered successfully. Please log in', ToastAndroid.SHORT);
           setEmail('');
           setName('');
+          setCompany('');
+          setDesignation('');
           setPassword('');
           setConfirmPassword('');
-          setType('');
         })
         .catch(() => alertPopup('Error', 'Unable to create user. Please try again later.'))
         // .catch(() => ToastAndroid.show('Error when creating user', ToastAndroid.SHORT))
@@ -76,12 +72,6 @@ export default function ManageUserScreen(props) {
             resetScrollToCoords={{ x: 0, y: 0 }}
           >
 
-            <CustomRadioButton
-              value={typeChoice}
-              select={(val) => setType(val)}
-              selected={type}
-            />
-
             <CustomInput
               setValue={setName}
               value={name}
@@ -94,6 +84,20 @@ export default function ManageUserScreen(props) {
               value={email}
               placeholderTextColor='#a1adb9'
               placeholder="Email Address"
+            />
+
+            <CustomInput
+              setValue={setCompany}
+              value={company}
+              placeholderTextColor='#a1adb9'
+              placeholder="Company"
+            />
+
+            <CustomInput
+              setValue={setDesignation}
+              value={designation}
+              placeholderTextColor='#a1adb9'
+              placeholder="Designation"
             />
 
             <CustomInput
@@ -124,7 +128,7 @@ export default function ManageUserScreen(props) {
           </KeyboardAwareScrollView>
         </SafeAreaView>
       </SafeAreaProvider>
-      <CustomProjectSpeedDial outsideProps={props} addNewForm={() => handleOpenFormSheet()} isRegistered isAdmin isDashboard={false}></CustomProjectSpeedDial>
+      <CustomProjectSpeedDial outsideProps={props}></CustomProjectSpeedDial>
     </>
   )
 }

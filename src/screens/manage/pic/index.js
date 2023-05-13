@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Alert, Image, View, Text, SafeAreaView, ScrollView, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
+import { Alert, Image, View, Text, SafeAreaView, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
@@ -14,11 +14,9 @@ import CustomButton from '../../../components/customButton';
 import CustomInput from '../../../components/customInput';
 import CustomProjectSpeedDial from '../../../components/customProjectSpeedDial';
 import CustomProjectListLoader from '../../../components/customProjectListLoader';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import moment from 'moment';
 
-export default function ManageZoneScreen(props) {
+export default function ManagePICScreen(props) {
   const MARGINWITHIMAGESELECTED = {
     flex: 1,
     alignItems: 'center',
@@ -39,14 +37,13 @@ export default function ManageZoneScreen(props) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [showDateTimePicker, setShowDateTimePicker] = useState(false);
   const [image, setImage] = useState(null);
   const [document, setDocument] = useState(null);
   const [imageFileName, setImageFileName] = useState('');
   const [documentFileName, setDocumentFileName] = useState('');
   const [imageDownloadURL, setImageDownloadURL] = useState('');
   const [documentDownloadURL, setDocumentDownloadURL] = useState('');
-  const [dateTime, setDateTime] = useState(new Date());
+  const [picName, setPicName] = useState('');
   const [description, setDescription] = useState('');
   const [dataUID, setDataUID] = useState('');
   const [isNewData, setIsNewData] = useState(false);
@@ -65,7 +62,7 @@ export default function ManageZoneScreen(props) {
     setIsLoading(true);
     const { isNew, data } = props.route.params;
     const userDetails = auth.currentUser;
-    setUserUID(userDetails.uid)
+    setUserUID(userDetails.uid);
     setIsNewData(isNew);
     if (isNew) {
       setIsNewUploadedDocument(true);
@@ -76,11 +73,12 @@ export default function ManageZoneScreen(props) {
       setDocumentFileName('');
       setImageDownloadURL('');
       setDocumentDownloadURL('');
-      setDateTime(new Date());
+      setPicName('');
       setDescription('');
     } else {
       if (data.documentNameRef) {
-        const typeOfFile = data.documentNameRef.split('.').pop();
+        const docFile = data.documentNameRef;
+        const typeOfFile = docFile.split('.').pop();
         if (typeOfFile === 'pdf') {
           setDocumentLogo(styles.documentLogo);
           setDocumentContainer(styles.documentSee);
@@ -99,7 +97,7 @@ export default function ManageZoneScreen(props) {
       setDocumentFileName(data.documentNameRef);
       setImageDownloadURL(data.imageDownloadURL);
       setDocumentDownloadURL(data.documentDownloadURL);
-      setDateTime(new Date(data.dateTime));
+      setPicName(data.picName);
       setDescription(data.description);
     }
     setIsLoading(false);
@@ -119,13 +117,12 @@ export default function ManageZoneScreen(props) {
               list['company'] = doc.data().company;
               list['designation'] = doc.data().designation;
             }
-          });
+          })
           resolve(list);
         }
       } catch (err) {
-        resolve(false);
         console.error('Error fetching uploader information', err);
-        alertPopup('Error', 'Error fetching uploader information', false);
+        resolve(false);
       }
     })
   }
@@ -135,7 +132,7 @@ export default function ManageZoneScreen(props) {
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
       aspect: [3, 4],
-      quality: 1,
+      quality: 1
     })
 
     if (result && !result.canceled) {
@@ -154,7 +151,6 @@ export default function ManageZoneScreen(props) {
 
   const pickDocument = async () => {
     let result = await DocumentPicker.getDocumentAsync({});
-
     if (result && !result.canceled) {
       if (result.mimeType === 'application/pdf') {
         setDocumentLogo(styles.documentLogo);
@@ -173,7 +169,7 @@ export default function ManageZoneScreen(props) {
 
   const replaceDocument = () => {
     setRemoveOldDoc(true);
-    setOldDoc(documentFileName)
+    setOldDoc(documentFileName);
     pickDocument();
   }
 
@@ -190,7 +186,7 @@ export default function ManageZoneScreen(props) {
           const blobFile = await response.blob();
           const storageRef = ref(storage, imageName);
           const result = await uploadBytes(storageRef, blobFile);
-          const picDownloadURL = await getDownloadURL(result.ref);
+          const picDownloadURL = await getDownloadURL(ref(result.ref));
           setImageDownloadURL(picDownloadURL);
           resolve({ picDownloadURL, imageName });
         } catch (err) {
@@ -201,7 +197,7 @@ export default function ManageZoneScreen(props) {
     })
   }
 
-  const removeImage = async () => {
+  const removeImage = () => {
     return new Promise(async (resolve, reject) => {
       try {
         const imageRef = ref(storage, oldImage);
@@ -227,7 +223,7 @@ export default function ManageZoneScreen(props) {
           const blobFile = await response.blob();
           const storageRef = ref(storage, documentName);
           const result = await uploadBytes(storageRef, blobFile);
-          const docDownloadURL = await getDownloadURL(result.ref);
+          const docDownloadURL = await getDownloadURL(ref(result.ref));
           setDocumentDownloadURL(docDownloadURL);
           resolve({ docDownloadURL, documentName });
         } catch (err) {
@@ -245,31 +241,31 @@ export default function ManageZoneScreen(props) {
         await deleteObject(documentRef);
         resolve(true);
       } catch (err) {
-        console.error('Error deleting old document', err);
+        console.error('Error deleteing old document', err);
         resolve(false);
       }
     })
   }
 
-  const deleteEvent = async () => {
+  const deletePIC = async () => {
     try {
       setIsUploading(true);
-      const documentRef = doc(db, "Events", dataUID);
+      const documentRef = doc(db, "PIC", dataUID);
       await updateDoc(documentRef, {
         deleted: true
       });
       setIsUploading(false);
-      alertPopup('Success', 'Event has been deleted successfully', true);
+      alertPopup('Success', 'PIC has been deleted successfully', true);
     } catch (err) {
       setIsUploading(false);
-      console.error('Error deleting event', err);
-      alertPopup('Error', 'Something went wrong when deleting event', false);
+      console.error('Error deleting PIC', err);
+      alertPopup('Error', 'Something went wrong when deleting PIC', false);
     }
   }
 
-  const saveZone = async () => {
-    if (dateTime == '') {
-      alertPopup('Warning', 'Please select date and time details!', false);
+  const savePIC = async () => {
+    if (picName == '') {
+      alertPopup('Warning', 'Please fill in PIC Name', false);
     } else {
       setIsUploading(true);
       const userInfo = await getUser();
@@ -277,12 +273,12 @@ export default function ManageZoneScreen(props) {
         const params = {
           uploader: userInfo,
           deleted: false,
+          picName,
           description,
-          dateTime: dateTime.getTime(),
           imageNameRef: imageFileName || '',
           imageDownloadURL: imageDownloadURL || '',
           documentNameRef: documentFileName || '',
-          documentDownloadURL: documentDownloadURL || '',
+          documentDownloadURL: documentDownloadURL || ''
         }
         if (isNewData) {
           try {
@@ -291,18 +287,19 @@ export default function ManageZoneScreen(props) {
               params.imageNameRef = imageName;
               params.imageDownloadURL = picDownloadURL;
             }
+
             if (document && document.uri) {
               const { docDownloadURL, documentName } = await uploadDocument();
               params.documentNameRef = documentName;
               params.documentDownloadURL = docDownloadURL;
             }
-            await addDoc(collection(db, "Events"), params);
+            await addDoc(collection(db, "PIC"), params)
             setIsUploading(false);
-            alertPopup('Success', 'Event added successfully', true);
+            alertPopup('Success', 'PIC added successfully', true);
           } catch (err) {
-            console.error('Error uploading new events', err);
+            console.error('Error uploading new pic', err);
             setIsUploading(false);
-            alertPopup('Error', 'Someting went wrong when adding new event', false)
+            alertPopup('Error', 'Something went wrong when adding new PIC', false);
           }
         } else {
           try {
@@ -334,27 +331,22 @@ export default function ManageZoneScreen(props) {
                 params.documentDownloadURL = docDownloadURL;
               }
             }
-
-            const documentRef = doc(db, "Events", dataUID);
+            const documentRef = doc(db, "PIC", dataUID);
             await updateDoc(documentRef, params);
             setIsUploading(false);
-            alertPopup('Success', 'Event updated successfully', true);
+            alertPopup('Success', 'PIC updated successfully', true);
           } catch (err) {
-            console.error('Error uploading updated events', err);
+            console.error('Error uploading updated PIC', err);
             setIsUploading(false);
-            alertPopup('Error', 'Something went wrong when updating event', false);
+            alertPopup('Error', 'Something went wrong when updating PIC', false);
           }
         }
       } catch (err) {
-        console.log('Error adding event', err);
-        alertPopup('Error', 'Error adding event', false);
+        console.error('Error adding PIC', err);
+        alertPopup('Error', 'Error adding PIC', false);
         setIsUploading(false);
       }
     }
-  }
-
-  const SelectingDate = () => {
-    setShowDateTimePicker(true);
   }
 
   const goTo = (navi) => {
@@ -382,14 +374,13 @@ export default function ManageZoneScreen(props) {
     onPress: () => console.log('Cancel delete'),
   }, {
     text: 'Delete',
-    onPress: () => deleteEvent()
+    onPress: () => deletePIC()
   }])
 
   const alertPopup = (title, message, action) => Alert.alert(title, message, [{
     text: 'OK',
-    onPress: action ? () => goTo('ZonesList') : () => console.log('OK Pressed')
+    onPress: action ? () => goTo('PICList') : () => console.log('OK Pressed')
   }]);
-
   if (isLoading) {
     return <CustomProjectListLoader />
   } else if (isUploading) {
@@ -401,8 +392,7 @@ export default function ManageZoneScreen(props) {
           isHUD={true}
           hudColor="#525253"
           color="#FAF9F6"
-        >
-        </ProgressLoader>
+        ></ProgressLoader>
       </View>
     )
   } else {
@@ -413,58 +403,44 @@ export default function ManageZoneScreen(props) {
             <ScrollView>
               <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={image ? MARGINWITHIMAGESELECTED : MARGINWITHOUTIMAGESELECTED}
+                style={image && image.uri ? MARGINWITHIMAGESELECTED : MARGINWITHOUTIMAGESELECTED}
               >
-                <>
-                  {image && <Image source={{ uri: image.uri || image }} style={{ width: 300, height: 300, marginBottom: 10 }}></Image>}
-                  {!image && <View style={{ width: '100%', height: 150, justifyContent: 'center', alignItems: 'center', alignContent: 'center' }}><Text>No image selected</Text></View>}
 
-                  {!isNewUploadedImage &&
-                    <CustomButton
-                      onPress={() => confirmationReplaceImage()}
-                      text="Replace Image"
-                      loading={isLoading || isUploading}
-                      btnColor="#000080"
-                      txtColor="white"
-                    />
-                  }
-                  {isNewUploadedImage &&
-                    <CustomButton
-                      onPress={() => pickImage()}
-                      text="Select Image"
-                      loading={isLoading || isUploading}
-                      btnColor="#000080"
-                      txtColor="white"
-                    />
-                  }
-                </>
+                {image && <Image source={{ uri: image.uri || image }} style={{ width: 300, height: 300 }}></Image>}
+                {!image && <View style={{ widht: '100%', height: 150, justifyContent: 'center', alignItems: 'center', alignContent: 'center' }}><Text>No image selected</Text></View>}
 
-                <>
-                  <View style={styles.datePicker}>
-                    <TouchableWithoutFeedback onPress={SelectingDate}>
-                      <View>
-                        <Text>{moment(dateTime).format('DD MMM YYYY') || 'Select date'}</Text>
-                      </View>
-                    </TouchableWithoutFeedback>
-                  </View>
-                  {showDateTimePicker &&
-                    <DateTimePicker
-                      onChange={(event, date) => {
-                        setShowDateTimePicker(false);
-                        if (event.type == 'set') setDateTime(date);
-                      }}
-                      value={dateTime}
-                      minimumDate={new Date()}
-                      mode='date'
-                    />
-                  }
-                </>
+                {!isNewUploadedImage &&
+                  <CustomButton
+                    onPress={() => confirmationReplaceImage()}
+                    text="Replace Image"
+                    loading={isLoading || isUploading}
+                    btnColor="#000080"
+                    txtColor="white"
+                  />
+                }
+
+                {isNewUploadedImage &&
+                  <CustomButton
+                    onPress={() => pickImage()}
+                    text="Select Image"
+                    loading={isLoading || isUploading}
+                    btnColor="#000080"
+                    txtColor="white"
+                  />
+                }
+
+                <CustomInput
+                  setValue={setPicName}
+                  value={picName}
+                  placeholderTextColor="#a1adb9"
+                  placeholder="PIC Name"
+                />
 
                 <CustomInput
                   setValue={setDescription}
                   value={description}
-                  placeholderTextColor='#a1adb9'
-                  placeholder="Description"
+                  placeholderTextColor="#a1adb9"
+                  placeholder="Description of PIC"
                 />
 
                 <>
@@ -487,11 +463,12 @@ export default function ManageZoneScreen(props) {
                       txtColor="white"
                     />
                   }
+
                   {isNewUploadedDocument &&
                     <CustomButton
                       onPress={() => pickDocument()}
                       text="Select Document"
-                      loading={isLoading}
+                      loading={isLoading || isUploading}
                       btnColor="#000080"
                       txtColor="white"
                     />
@@ -499,9 +476,9 @@ export default function ManageZoneScreen(props) {
                 </>
 
                 <CustomButton
-                  onPress={() => saveZone()}
-                  text={isNewData ? "Create Event" : 'Update Event'}
-                  loading={isLoading}
+                  onPress={() => savePIC()}
+                  text={isNewData ? "Create PIC" : 'Update PIC'}
+                  loading={isLoading || isUploading}
                   btnColor="#570861"
                   txtColor="white"
                 />
@@ -509,8 +486,8 @@ export default function ManageZoneScreen(props) {
                 {!isNewData &&
                   <CustomButton
                     onPress={() => confirmDelete()}
-                    text="Delete Event"
-                    loading={isLoading}
+                    text="Delete PIC"
+                    loading={isLoading || isUploading}
                     btnColor="#FF3333"
                     txtColor="white"
                   />
@@ -519,7 +496,7 @@ export default function ManageZoneScreen(props) {
             </ScrollView>
           </SafeAreaView>
         </SafeAreaProvider>
-        <CustomProjectSpeedDial outsideProps={props} isEvent></CustomProjectSpeedDial>
+        <CustomProjectSpeedDial outsideProps={props} isPIC></CustomProjectSpeedDial>
       </>
     )
   }

@@ -5,22 +5,17 @@ const styles = StyleSheet.create({
     marginVertical: 15,
     marginHorizontal: 20,
     padding: 10,
-    borderColor: '#b4bcbc',
+    borderColor: '#babece',
     borderWidth: 1,
     borderRadius: 15,
     overflow: 'hidden',
-    backgroundColor: '#793914'
+    backgroundColor: '#ca9288'
   },
   emptyList: {
     fontSize: 18,
     textAlign: 'center',
     fontWeight: '600',
     color: 'white'
-  },
-  container: {
-    backgroundColor: 'white',
-    borderTopColor: '#D3D3D3',
-    borderTopWidth: 1
   },
   buttonPIC: {
     flex: 1,
@@ -30,17 +25,6 @@ const styles = StyleSheet.create({
   },
   insideButtonPIC: {
     textAlign: 'center'
-  },
-  welcomeText: {
-    textAlign: 'center',
-    fontWeight: 700,
-    fontSize: 40,
-    color: '#570861'
-  },
-  detailsText: {
-    marginVertical: 5,
-    marginHorizontal: 10,
-    fontSize: 20,
   }
 })
 
