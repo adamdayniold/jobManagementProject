@@ -103,7 +103,7 @@ export default function ManagePICScreen(props) {
     setIsLoading(false);
   }, []))
 
-  const getUser = async (userUID) => {
+  const getUser = async () => {
     return new Promise(async (resolve, reject) => {
       try {
         const list = {};
@@ -111,7 +111,8 @@ export default function ManagePICScreen(props) {
         const usersList = await getDocs(usersRef);
         if (usersList) {
           usersList.forEach((doc) => {
-            if (doc.data().uid === userUID) {
+            if (doc.id === userUID) {
+              list['id'] = doc.id;
               list['name'] = doc.data().name;
               list['email'] = doc.data().email;
               list['company'] = doc.data().company;

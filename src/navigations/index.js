@@ -14,6 +14,7 @@ import ManagePICScreen from "../screens/manage/pic";
 import UsersListScreen from "../screens/list/users";
 import ZonesListScreen from "../screens/list/zone";
 import PICListScreen from "../screens/list/pic";
+import ArchiveZonesListScreen from "../screens/archive/zone";
 
 import AdminUserDashboardScreen from "../screens/dashboard/admin/user";
 import AdminZoneDashboardScreen from "../screens/dashboard/admin/zone";
@@ -45,6 +46,7 @@ const AppNavigator = () => (
       <Screen name="UsersList" component={UsersListScreen} options={{ headerTitle: 'Users List', headerBackVisible: true, headerTitleAlign: 'center' }}></Screen>
       <Screen name="ZonesList" component={ZonesListScreen} options={{ headerTitle: 'Events List', headerBackVisible: true, headerTitleAlign: 'center' }}></Screen>
       <Screen name="PICList" component={PICListScreen} options={{ headerTitle: 'PIC List', headerBackVisible: true, headerTitleAlign: 'center' }}></Screen>
+      <Screen name="ArchiveZone" component={ArchiveZonesListScreen} options={{ headerTitle: 'Archived Events', headerBackVisible: true, headerTitleAlign: 'center' }}></Screen>
     </Navigator>
   </NavigationContainer>
 )

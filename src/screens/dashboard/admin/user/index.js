@@ -53,7 +53,6 @@ export default function AdminUserDashboardScreen(props) {
           }
         });
         setUserItem(list.sort((a, b) => a.name.localeCompare(b.type)));
-        console.log(list)
       }
       setIsLoading(false);
     } catch (err) {
@@ -83,14 +82,6 @@ export default function AdminUserDashboardScreen(props) {
   }
 
   const goTo = () => {
-  }
-
-  const handleEvents = () => {
-    console.log('handleevents')
-  }
-
-  const handlePIC = () => {
-    console.log('handle PIC')
   }
 
   const alertPopup = (title, message) => Alert.alert(title, message, [{

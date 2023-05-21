@@ -60,6 +60,7 @@ export default function ManageZoneScreen(props) {
   const [docLogo, setDocumentLogo] = useState(styles.documentLogo);
   const [docContainer, setDocumentContainer] = useState(styles.documentSee);
   const [docFileType, setDocFileType] = useState('');
+  const [uploaderInfo, setUploaderInfo] = useState({});
 
   useFocusEffect(useCallback(() => {
     setIsLoading(true);
@@ -101,11 +102,12 @@ export default function ManageZoneScreen(props) {
       setDocumentDownloadURL(data.documentDownloadURL);
       setDateTime(new Date(data.dateTime));
       setDescription(data.description);
+      setUploaderInfo(data.uploader);
     }
     setIsLoading(false);
   }, []))
 
-  const getUser = async (userUID) => {
+  const getUser = async () => {
     return new Promise(async (resolve, reject) => {
       try {
         const list = {};
@@ -113,7 +115,8 @@ export default function ManageZoneScreen(props) {
         const usersList = await getDocs(usersRef);
         if (usersList) {
           usersList.forEach((doc) => {
-            if (doc.data().uid === userUID) {
+            if (doc.id === userUID) {
+              list['id'] = doc.id;
               list['name'] = doc.data().name;
               list['email'] = doc.data().email;
               list['company'] = doc.data().company;
@@ -267,6 +270,22 @@ export default function ManageZoneScreen(props) {
     }
   }
 
+  const archiveEvent = async () => {
+    try {
+      setIsUploading(true);
+      const documentRef = doc(db, "Events", dataUID);
+      await updateDoc(documentRef, {
+        archived: true
+      });
+      setIsUploading(false);
+      alertPopup('Success', 'Event has been archived successfully', true);
+    } catch (err) {
+      setIsUploading(false);
+      console.error('Error archiving event', err);
+      alertPopup('Error', 'Something went wrong when archiving event', false);
+    }
+  }
+
   const saveZone = async () => {
     if (dateTime == '') {
       alertPopup('Warning', 'Please select date and time details!', false);
@@ -277,6 +296,7 @@ export default function ManageZoneScreen(props) {
         const params = {
           uploader: userInfo,
           deleted: false,
+          archived: false,
           description,
           dateTime: dateTime.getTime(),
           imageNameRef: imageFileName || '',
@@ -286,6 +306,7 @@ export default function ManageZoneScreen(props) {
         }
         if (isNewData) {
           try {
+            params.comments = [];
             if (image && image.uri) {
               const { picDownloadURL, imageName } = await uploadImage();
               params.imageNameRef = imageName;
@@ -383,6 +404,14 @@ export default function ManageZoneScreen(props) {
   }, {
     text: 'Delete',
     onPress: () => deleteEvent()
+  }])
+
+  const confirmArchived = () => Alert.alert('Confirm Archived', 'Are you sure you want to archived?', [{
+    text: 'Cancel',
+    onPress: () => console.log('Cancel archive'),
+  }, {
+    text: 'Archive',
+    onPress: () => archiveEvent()
   }])
 
   const alertPopup = (title, message, action) => Alert.alert(title, message, [{
@@ -505,8 +534,17 @@ export default function ManageZoneScreen(props) {
                   btnColor="#570861"
                   txtColor="white"
                 />
+                {!isNewData && (uploaderInfo?.id === userUID) &&
+                  <CustomButton
+                    onPress={() => confirmArchived()}
+                    text="Archive Event"
+                    loading={isLoading}
+                    btnColor="#FF3333"
+                    txtColor="white"
+                  />
+                }
 
-                {!isNewData &&
+                {/* {!isNewData &&
                   <CustomButton
                     onPress={() => confirmDelete()}
                     text="Delete Event"
@@ -514,7 +552,7 @@ export default function ManageZoneScreen(props) {
                     btnColor="#FF3333"
                     txtColor="white"
                   />
-                }
+                } */}
               </KeyboardAvoidingView>
             </ScrollView>
           </SafeAreaView>

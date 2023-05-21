@@ -63,6 +63,12 @@ const CustomProjectSpeedDial = ({ outsideProps, isRegistered, isAdmin, isDashboa
               onPress={() => navigate('ZoneCreation')}
               buttonStyle={{ backgroundColor: '#000080' }}
             />
+            <SpeedDial.Action
+              icon={{ name: 'archive', color: '#fff' }}
+              title="Archived Event"
+              onPress={() => navigate('ArchiveZone')}
+              buttonStyle={{ backgroundColor: '#000080' }}
+            />
           </>
         }
         {!isDashboard &&
